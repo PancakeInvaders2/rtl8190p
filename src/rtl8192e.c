@@ -1068,7 +1068,7 @@ static u8 MRateToHwRate8190Pci(u8 rate)
 void  rtl8192_tx_fill_desc(struct net_device* dev, tx_desc * pdesc, cb_desc * cb_desc, struct sk_buff* skb)
 {
     struct r8192_priv *priv = rtllib_priv(dev);
-    dma_addr_t mapping = pci_map_single(priv->pdev, skb->data, skb->len, PCI_DMA_TODEVICE);
+    dma_addr_t mapping = dma_map_single(&priv->pdev->dev, skb->data, skb->len, DMA_TO_DEVICE);
     TX_FWINFO_8190PCI *pTxFwInfo = NULL;
 	 // fill tx firmware */
     pTxFwInfo = (PTX_FWINFO_8190PCI)skb->data;
@@ -1181,7 +1181,7 @@ void  rtl8192_tx_fill_cmd_desc(struct net_device* dev, tx_desc_cmd * entry,
 		cb_desc * cb_desc, struct sk_buff* skb)
 {
     struct r8192_priv *priv = rtllib_priv(dev);
-    dma_addr_t mapping = pci_map_single(priv->pdev, skb->data, skb->len, PCI_DMA_TODEVICE);
+    dma_addr_t mapping = dma_map_single(&priv->pdev->dev, skb->data, skb->len, DMA_TO_DEVICE);
 
     memset(entry, 0, 12);
     entry->LINIP = cb_desc->bLastIniPkt;

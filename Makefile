@@ -10,7 +10,6 @@ EXTRA_CFLAGS+=-DEEPROM_OLD_FORMAT_SUPPORT=1
 EXTRA_CFLAGS += -DUSE_FW_SOURCE_IMG_FILE
 #it will fail to compile in suse linux enterprise 10 sp2. This flag is to solve this problem.
 EXTRA_CFLAGS += -I$(TOPDIR)/drivers/net/wireless
-EXTRA_CFLAGS += -std=gnu89
 EXTRA_CFLAGS += -O2
 EXTRA_CFLAGS += -mhard-float -DCONFIG_FORCE_HARD_FLOAT=y
 

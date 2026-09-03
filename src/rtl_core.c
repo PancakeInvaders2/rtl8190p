@@ -118,7 +118,7 @@ static struct pci_device_id rtl8192_pci_id_tbl[] = {
 };
 MODULE_DEVICE_TABLE(pci, rtl8192_pci_id_tbl);
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 12, 0))
-MODULE_IMPORT_NS(CRYPTO_INTERNAL);
+MODULE_IMPORT_NS("CRYPTO_INTERNAL");
 #endif
 
 static int rtl8192_pci_probe(struct pci_dev *pdev,
@@ -2290,13 +2290,14 @@ static void rtl8192_free_rx_ring(struct net_device *dev)
         if (!skb)
             continue;
 
-        pci_unmap_single(priv->pdev,
+        dma_unmap_single(&priv->pdev->dev,
                 *((dma_addr_t *)skb->cb),
-                priv->rxbuffersize, PCI_DMA_FROMDEVICE);
+                priv->rxbuffersize, DMA_FROM_DEVICE);
         kfree_skb(skb);
     }
 
-    pci_free_consistent(priv->pdev, sizeof(*priv->rx_ring) * priv->rxringcount,
+    dma_free_coherent(&priv->pdev->dev,
+            sizeof(*priv->rx_ring) * priv->rxringcount,
             priv->rx_ring, priv->rx_ring_dma);
     priv->rx_ring = NULL;
 }
@@ -2310,13 +2311,13 @@ static void rtl8192_free_tx_ring(struct net_device *dev, unsigned int prio)
         tx_desc *entry = &ring->desc[ring->idx];
         struct sk_buff *skb = __skb_dequeue(&ring->queue);
 
-        pci_unmap_single(priv->pdev, le32_to_cpu(entry->TxBuffAddr),
-                skb->len, PCI_DMA_TODEVICE);
+        dma_unmap_single(&priv->pdev->dev, le32_to_cpu(entry->TxBuffAddr),
+                skb->len, DMA_TO_DEVICE);
         kfree_skb(skb);
         ring->idx = (ring->idx + 1) % ring->entries;
     }
 
-    pci_free_consistent(priv->pdev, sizeof(*ring->desc)*ring->entries,
+    dma_free_coherent(&priv->pdev->dev, sizeof(*ring->desc)*ring->entries,
             ring->desc, ring->dma);
     ring->desc = NULL;
 }
@@ -2437,8 +2438,8 @@ static void rtl8192_tx_isr(struct net_device *dev, int prio)
         }
 
         skb = __skb_dequeue(&ring->queue);
-        pci_unmap_single(priv->pdev, le32_to_cpu(entry->TxBuffAddr),
-                skb->len, PCI_DMA_TODEVICE);
+        dma_unmap_single(&priv->pdev->dev, le32_to_cpu(entry->TxBuffAddr),
+                skb->len, DMA_TO_DEVICE);
 
         kfree_skb(skb);
     }
@@ -2512,7 +2513,7 @@ void rtl819xE_tx_cmd(struct net_device *dev, struct sk_buff *skb)
 
     spin_lock_irqsave(&priv->irq_th_lock, flags);
     ring = &priv->tx_ring[TXCMD_QUEUE];
-    mapping = pci_map_single(priv->pdev, skb->data, skb->len, PCI_DMA_TODEVICE);
+    mapping = dma_map_single(&priv->pdev->dev, skb->data, skb->len, DMA_TO_DEVICE);
 
     idx = (ring->idx + skb_queue_len(&ring->queue)) % ring->entries;
     entry = (tx_desc_cmd*) &ring->desc[idx];
@@ -2542,7 +2543,7 @@ short rtl8192_tx(struct net_device *dev, struct sk_buff* skb)
     u8*   pda_addr = NULL;
     int   idx;
     u32 fwinfo_size = 0;
-    mapping = pci_map_single(priv->pdev, skb->data, skb->len, PCI_DMA_TODEVICE);
+    mapping = dma_map_single(&priv->pdev->dev, skb->data, skb->len, DMA_TO_DEVICE);
 
     priv->rtllib->bAwakePktSent = true;
 
@@ -2610,8 +2611,9 @@ static short rtl8192_alloc_rx_desc_ring(struct net_device *dev)
     rx_desc *entry = NULL;
     int i;
 
-    priv->rx_ring = pci_alloc_consistent(priv->pdev,
-            sizeof(*priv->rx_ring) * priv->rxringcount, &priv->rx_ring_dma);
+    priv->rx_ring = dma_alloc_coherent(&priv->pdev->dev,
+            sizeof(*priv->rx_ring) * priv->rxringcount,
+            &priv->rx_ring_dma, GFP_KERNEL);
 
     if (!priv->rx_ring || (unsigned long)priv->rx_ring & 0xFF) {
         RT_TRACE(COMP_ERR,"Cannot allocate RX ring\n");
@@ -2630,8 +2632,8 @@ static short rtl8192_alloc_rx_desc_ring(struct net_device *dev)
         skb->dev = dev;
         priv->rx_buf[i] = skb;
         mapping = (dma_addr_t *)skb->cb;
-        *mapping = pci_map_single(priv->pdev, skb_tail_pointer(skb),
-                priv->rxbuffersize, PCI_DMA_FROMDEVICE);
+        *mapping = dma_map_single(&priv->pdev->dev, skb_tail_pointer(skb),
+                priv->rxbuffersize, DMA_FROM_DEVICE);
 
         entry->BufferAddress = cpu_to_le32(*mapping);
 
@@ -2651,7 +2653,8 @@ static int rtl8192_alloc_tx_desc_ring(struct net_device *dev,
     dma_addr_t dma;
     int i;
 
-    ring = pci_alloc_consistent(priv->pdev, sizeof(*ring) * entries, &dma);
+    ring = dma_alloc_coherent(&priv->pdev->dev, sizeof(*ring) * entries,
+            &dma, GFP_KERNEL);
     if (!ring || (unsigned long)ring & 0xFF) {
         RT_TRACE(COMP_ERR, "Cannot allocate TX ring (prio = %d)\n", prio);
         return -ENOMEM;
@@ -2726,8 +2729,8 @@ void rtl8192_pci_resetdescring(struct net_device *dev)
                 tx_desc *entry = &ring->desc[ring->idx];
                 struct sk_buff *skb = __skb_dequeue(&ring->queue);
 
-                pci_unmap_single(priv->pdev, le32_to_cpu(entry->TxBuffAddr),
-                        skb->len, PCI_DMA_TODEVICE);
+                dma_unmap_single(&priv->pdev->dev, le32_to_cpu(entry->TxBuffAddr),
+                        skb->len, DMA_TO_DEVICE);
                 kfree_skb(skb);
                 ring->idx = (ring->idx + 1) % ring->entries;
             }
@@ -3628,15 +3631,15 @@ static void rtl8192_rx(struct net_device *dev)
 			if (!priv->ops->rx_query_status_descriptor(dev, &stats, pdesc, skb))
 				goto done;
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0)
-			pci_dma_sync_single_for_cpu(priv->pdev,
+			dma_sync_single_for_cpu(&priv->pdev->dev,
 						*((dma_addr_t *)skb->cb),
 						priv->rxbuffersize,
-						PCI_DMA_FROMDEVICE);
+						DMA_FROM_DEVICE);
 #else
-			pci_unmap_single(priv->pdev,
+			dma_unmap_single(&priv->pdev->dev,
 					*((dma_addr_t *)skb->cb),
 					priv->rxbuffersize,
-					PCI_DMA_FROMDEVICE);
+					DMA_FROM_DEVICE);
 #endif
 
 			skb_put(skb, pdesc->Length);
@@ -3678,8 +3681,8 @@ static void rtl8192_rx(struct net_device *dev)
 			skb = new_skb;
                         skb->dev = dev;
 			priv->rx_buf[priv->rx_idx] = skb;
-			*((dma_addr_t *) skb->cb) = pci_map_single(priv->pdev, skb_tail_pointer(skb), priv->rxbuffersize, PCI_DMA_FROMDEVICE);
-			//                *((dma_addr_t *) skb->cb) = pci_map_single(priv->pdev, skb_tail_pointer(skb), priv->rxbuffersize, PCI_DMA_FROMDEVICE);
+			*((dma_addr_t *) skb->cb) = dma_map_single(&priv->pdev->dev, skb_tail_pointer(skb), priv->rxbuffersize, DMA_FROM_DEVICE);
+			//                *((dma_addr_t *) skb->cb) = dma_map_single(&priv->pdev->dev, skb_tail_pointer(skb), priv->rxbuffersize, DMA_FROM_DEVICE);
 
 		}
 done:
@@ -4465,9 +4468,9 @@ static int rtl8192_pci_probe(struct pci_dev *pdev,
 
 	pci_set_master(pdev);
 	//pci_set_wmi(pdev);
-	pci_set_dma_mask(pdev, 0xffffff00ULL);
+	dma_set_mask(&pdev->dev, 0xffffff00ULL);
 #if LINUX_VERSION_CODE > KERNEL_VERSION(2, 5, 0)
-	pci_set_consistent_dma_mask(pdev, 0xffffff00ULL);
+	dma_set_coherent_mask(&pdev->dev, 0xffffff00ULL);
 #endif
 	dev = alloc_rtllib(sizeof(struct r8192_priv));
 	if (!dev)

@@ -227,8 +227,6 @@ void TSInitialize(struct rtllib_device *ieee)
 		pr_info("@pTxTS->TsCommonInfo.List.next %p, @pTxTS->TsCommonInfo.List.prev.next %p\n", &pTxTS->TsCommonInfo.List.next, &pTxTS->TsCommonInfo.List.prev->next);
 		pr_info("&ieee->Tx_TS_Unused_List.next %p, &ieee->Tx_TS_Unused_List.prev->next %p\n",
 			&ieee->Tx_TS_Unused_List.next, &ieee->Tx_TS_Unused_List.prev->next);
-		list_add_tail(&pRxTS->TsCommonInfo.List, &ieee->Rx_TS_Unused_List);
-		pr_info("****** Back from list_add_tail\n");
 		list_add_tail(&pTxTS->TsCommonInfo.List,
 				&ieee->Tx_TS_Unused_List);
 		pr_info("****** Back from list_add_tail\n");
@@ -258,10 +256,10 @@ void TSInitialize(struct rtllib_device *ieee)
 			    RxPktPendingTimeout,
 			    (unsigned long) pRxTS);
 #else
-		timer_setup(&pTxTS->TsCommonInfo.SetupTimer, TsSetupTimeOut,
+		timer_setup(&pRxTS->TsCommonInfo.SetupTimer, TsSetupTimeOut,
 			    0);
 
-		timer_setup(&pTxTS->TsCommonInfo.InactTimer, TsInactTimeout,
+		timer_setup(&pRxTS->TsCommonInfo.InactTimer, TsInactTimeout,
 			    0);
 
 		timer_setup(&pRxTS->RxAdmittedBARecord.Timer,

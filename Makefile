@@ -5,13 +5,13 @@ MODDESTDIR = /lib/modules/$(KVER)/kernel/drivers/net/wireless/
 KSRC = /lib/modules/$(KVER)/build
 RTL819x_FIRM_DIR = $(RTL819x_DIR)/firmware
 MODULE_FILE = $(RTL819x_DIR)/rtllib/Module.symvers
-EXTRA_CFLAGS += -DHAVE_NET_DEVICE_OPS
-EXTRA_CFLAGS+=-DEEPROM_OLD_FORMAT_SUPPORT=1
-EXTRA_CFLAGS += -DUSE_FW_SOURCE_IMG_FILE
+ccflags-y += -DHAVE_NET_DEVICE_OPS
+ccflags-y += -DEEPROM_OLD_FORMAT_SUPPORT=1
+ccflags-y += -DUSE_FW_SOURCE_IMG_FILE
 #it will fail to compile in suse linux enterprise 10 sp2. This flag is to solve this problem.
-EXTRA_CFLAGS += -I$(TOPDIR)/drivers/net/wireless
-EXTRA_CFLAGS += -O2
-EXTRA_CFLAGS += -mhard-float -DCONFIG_FORCE_HARD_FLOAT=y
+ccflags-y += -I$(TOPDIR)/drivers/net/wireless
+ccflags-y += -O2
+ccflags-y += -mhard-float -DCONFIG_FORCE_HARD_FLOAT=y
 
 SUBARCH := $(shell uname -m | sed -e "s/i.86/i386/; s/ppc.*/powerpc/; s/armv.l/arm/; s/aarch64/arm64/;")
 

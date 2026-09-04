@@ -110,6 +110,17 @@ struct iw_spy_data{
         (type *)( (char *)__mptr - offsetof(type, member) );})
 #endif
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(7, 0, 0)
+#ifndef from_timer
+#define from_timer(var, callback_timer, timer_field) \
+	container_of(callback_timer, typeof(*var), timer_field)
+#endif
+
+#ifndef del_timer_sync
+#define del_timer_sync(timer) timer_delete_sync(timer)
+#endif
+#endif
+
 #if (LINUX_VERSION_CODE > KERNEL_VERSION(2, 5, 0))
 	#define EXPORT_SYMBOL_RSL(x) EXPORT_SYMBOL(x)
 #else

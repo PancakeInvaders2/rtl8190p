@@ -1,8 +1,9 @@
-LINUX_KSRC_MODULE = /lib/modules/$(shell uname -r)/kernel/drivers/net/wireless/
+
+KVER ?= $(shell uname -r)
+KSRC ?= /lib/modules/$(KVER)/build
+
 RTL819x_DIR = $(shell pwd)
-KVER  = $(shell uname -r)
-MODDESTDIR = /lib/modules/$(KVER)/kernel/drivers/net/wireless/
-KSRC = /lib/modules/$(KVER)/build
+MODDESTDIR ?= /lib/modules/$(KVER)/kernel/drivers/net/wireless
 RTL819x_FIRM_DIR = $(RTL819x_DIR)/firmware
 MODULE_FILE = $(RTL819x_DIR)/rtllib/Module.symvers
 ccflags-y += -DHAVE_NET_DEVICE_OPS
@@ -17,9 +18,6 @@ SUBARCH := $(shell uname -m | sed -e "s/i.86/i386/; s/ppc.*/powerpc/; s/armv.l/a
 
 ARCH ?= $(SUBARCH)
 CROSS_COMPILE ?=
-KVER  := $(shell uname -r)
-KSRC ?= /lib/modules/$(KVER)/build
-MODDESTDIR := /lib/modules/$(KVER)/kernel/drivers/net/wireless
 INSTALL_PREFIX :=
 
 ifneq ($(KERNELRELEASE),)
